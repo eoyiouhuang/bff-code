@@ -1,0 +1,15 @@
+# API keys and secrets
+.env
+.env-macos
+test_gemini.py
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# VS Code settings
+.vscode/
+
+# Mac system files
+.DS_Store

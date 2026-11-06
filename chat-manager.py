@@ -55,6 +55,11 @@ import soundfile as sf
 from faster_whisper import WhisperModel
 import torch
 import dotenv
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "sentiment"))
+from turn_analyzer import analyze_turn
+from bonding_state import BondingState
+from memory_manager import run_on_boot, consolidate_session
 
 from piper import PiperVoice
 try:  # Optional type that some versions expose
@@ -1301,6 +1306,9 @@ def run_conversation(config: ConversationConfig) -> None:
     )
 
     # Create session directory
+    # ── Boot memory consolidation ──
+    bonding = BondingState()
+    run_on_boot()
     log_dir = ensure_log_dir()
     session_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     session_dir = log_dir / f"session-{session_id}"
@@ -1506,6 +1514,17 @@ def run_conversation(config: ConversationConfig) -> None:
                 turn += 1
                 continue
 
+            # ── Sentiment analysis (non-blocking) ──
+            try:
+                vad_result = analyze_turn(user_text, conversation_history=messages[-5:])
+                bonding.update(vad_result)
+                alert = bonding.get_alert()
+                if alert:
+                    print(f"[Bonding] Alert: {alert} | Affinity: {bonding.affinity_score:.1f}", file=sys.stderr)
+                else:
+                    print(f"[Bonding] Affinity: {bonding.affinity_score:.1f} ({bonding.get_bonding_level()}) | Tone: {vad_result.get('tone','?')}", file=sys.stderr)
+            except Exception as e:
+                print(f"[Bonding] Sentiment analysis failed: {e}", file=sys.stderr)
             messages.append({"role": "user", "content": user_text})
             
             # Truncate history: Keep generic system prompt + last N messages
@@ -1702,6 +1721,12 @@ def run_conversation(config: ConversationConfig) -> None:
             log_file,
             {"type": "session_end"},
         )
+        # ── Save bonding state and consolidate session ──
+        try:
+            bonding.save_to_profile()
+            consolidate_session(bonding.session_vad_history)
+        except Exception as e:
+            print(f"[Bonding] Failed to save session: {e}", file=sys.stderr)
 
 
 def main() -> None:

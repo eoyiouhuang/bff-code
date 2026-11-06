@@ -1,0 +1,20 @@
+{
+  "affinity_score": 51.52,
+  "last_session": "2026-05-28T13:37:13.054573",
+  "total_turns": 10,
+  "vad_baseline": {
+    "valence": -0.157,
+    "arousal": 0.459,
+    "dominance": 0.487
+  },
+  "session_history": [
+    {
+      "timestamp": "2026-05-28T14:04:29.319396",
+      "turns": 3,
+      "avg_valence": 0.4,
+      "avg_arousal": 0.5,
+      "avg_dominance": 0.6
+    }
+  ],
+  "last_boot": "2026-05-28T14:04:29.319586"
+}
